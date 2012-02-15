@@ -14,6 +14,7 @@ To use Backbone-Associative,
 1. Extend your model classes from Backbone.AssociativeModel.
 2. Add an `associations` function as an instance property on your Backbone.AssociativeModel classes.
 
+```javascript
     Article = Backbone.AssociativeModel.extend({
         associations: function() {
             this.hasMany('comments');
@@ -25,7 +26,7 @@ To use Backbone-Associative,
             this.belongsToOne('article');
         }
     });
-
+```
 # Associations
 * `hasOne` and `hasMany` associations indicate that another class has a
 reference to the class to which you assign the `has` association.
