@@ -5,6 +5,7 @@ Backbone-Relational, Backbone-Associative differs in two key ways:
 
 1. Associations (and reverse associations) are assigned in their own model classes,
 rather than assigning both in a single model class.
+
 ```javascript
 //Backbone-Associative
 House = Backbone.AssociativeModel.extend({
