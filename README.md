@@ -4,7 +4,37 @@ familiar from ActiveRecord in Rails. While heavily influenced by
 Backbone-Relational, Backbone-Associative differs in two key ways:
 
 1. Associations (and reverse associations) are assigned in their own model classes,
-rather than assigning both in a single model class. TODO: example comparing syntax
+rather than assigning both in a single model class.
+```javascript
+//Backbone-Associative
+House = Backbone.AssociativeModel.extend({
+    associations: function() {
+        this.hasMany('occupants').viaReverseKey('livesIn');
+    }
+});
+
+Person = Backbone.AssociativeModel.extend({
+    associations: function() {
+        this.hasOne('house').includeInJSON(false);
+    }
+});
+
+//Backbone-Relational
+House = Backbone.RelationalModel.extend({
+    relations: [
+        {
+            type: Backbone.HasMany,
+            key: 'occupants',
+            relatedModel: 'Person',
+            includeInJSON: Backbone.Model.prototype.idAttribute,
+            collectionType: 'PersonCollection',
+            reverseRelation: {
+                key: 'livesIn'
+            }
+        }
+    ]
+});
+```
 2. Associations are declared in a chained, sentence-like API, rather
    than by passing in an options hash.  TODO: example comparing syntax
 
