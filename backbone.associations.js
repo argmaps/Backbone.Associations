@@ -101,9 +101,23 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                         var rootNameSpace = Backbone.AssociativeModel.prototype._namespace;
                         if (rootNameSpace[modelName]) return rootNameSpace[modelName];
 
+                        if (modelName.charAt(modelName.length - 1) === 's') {
+                            var modelNameWithoutTrailingS = modelName.substring(0, modelName.length - 1);
+                            if (rootNameSpace[modelNameWithoutTrailingS]) return rootNameSpace[modelNameWithoutTrailingS];
+                        }
+
                         var modelSubNameSpaces = _(rootNameSpace).chain().keys().select(function(k) { return !_.isFunction(rootNameSpace[k]); }).value(),
                             modelSubNameSpaceForThisModel = _(modelSubNameSpaces).detect(function(ns) {
-                                return _.isFunction(rootNameSpace[ns][modelName]) && new rootNameSpace[ns][modelName]() instanceof Backbone.AssociativeModel;  });
+                                var original = _.isFunction(rootNameSpace[ns][modelName]) && new rootNameSpace[ns][modelName]() instanceof Backbone.AssociativeModel,
+                                    withoutTrailingS;
+
+                                if (modelNameWithoutTrailingS) {
+                                    withoutTrailingS = _.isFunction(rootNameSpace[ns][modelNameWithoutTrailingS])
+                                                            && new rootNameSpace[ns][modelNameWithoutTrailingS]() instanceof Backbone.AssociativeModel;
+                                }
+
+                                return original || withoutTrailingS;
+                            });
 
                         return rootNameSpace[modelSubNameSpaceForThisModel] && rootNameSpace[modelSubNameSpaceForThisModel][modelName];
                     },
