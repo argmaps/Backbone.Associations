@@ -47,7 +47,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 // When the `through` and `viaKey` options are specified for a `hasMany` association on a model, that model will have a collection of "join models"
                 // (assigned to its `joinKey` attribute), which hold both itself and the other "joined" model.  Backbone-Associative literally goes through these
                 // "join models" to fetch the other "joined" models from them ("other" meaning other than our original model), depositing these in a collection of
-                // joined models on the original model.
+                // joined models on the original model under an attribute with the association name specified.
                 if (!_(self._associations).chain().pluck('name').include(joinKey)) throw "Model with cid "+self.cid+" does not have an association of joinModel called "+ joinKey+".";
 
                 return _.extend(returnObj, {
@@ -55,8 +55,17 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                         var associatedCollection = self.get(associatedKey);
                         if (associatedCollection && associatedCollection instanceof Backbone.Collection) {
                             var joinCollection = self.get(joinKey);
-                            joinCollection.on('add', function(model) {  this.include(model.get(key)) === false && this.add(model.get(key));  }, associatedCollection)
-                                        .on('remove', function(model) {  this.remove(model.get(key));  }, associatedCollection);
+                            joinCollection.on('add', function(model) {
+                                var collectionOfModelsFoundThrough = self.get(associatedKey);
+                                if (collectionOfModelsFoundThrough.include(model.get(key))) return;
+
+                                if (model.has(key)) collectionOfModelsFoundThrough.add(model.get(key));
+                                else model.on('change:'+key, function(model, keyModel) {
+                                    if (keyModel && collectionOfModelsFoundThrough.include(keyModel) === false) collectionOfModelsFoundThrough.add(keyModel);
+                                });
+
+                            })
+                            .on('remove', function(model) {  self.get(associatedKey).remove(model.get(key));  });
                         } else {
                             //when modelThroughWhichModelFoundThroughIsFound is set, set modelFoundThrough
                             var handler = function(hostModel, joinModel, options) {
@@ -119,7 +128,10 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                                 return original || withoutTrailingS;
                             });
 
-                        return rootNameSpace[modelSubNameSpaceForThisModel] && rootNameSpace[modelSubNameSpaceForThisModel][modelName];
+                        if (rootNameSpace[modelSubNameSpaceForThisModel]) {
+                            if (!modelNameWithoutTrailingS) return rootNameSpace[modelSubNameSpaceForThisModel][modelName];
+                            else return rootNameSpace[modelSubNameSpaceForThisModel][modelNameWithoutTrailingS];
+                        }
                     },
 
                     associationName = assocObj.name,
@@ -136,7 +148,6 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     if (attr.include(this) === false) attr.add(this);
                 } else {
                     associatedModel.set(attrName, this);
-                    // this.on('destroy', function() {  this.unset(attrName);  }, associatedModel);
                     this.on('destroy', function() {  if (associatedModel.get(attrName) === this) associatedModel.unset(attrName);  },  this);
                 }
             };
@@ -163,9 +174,9 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     collection.on('destroy', collection.remove, collection)
                         .on('add', function(model) {  this.trigger('add:'+associatedKey, model);  },  self)
                         .on('add', function(model) {  this.setReciprocalAssociationIfPresent(model, associatedKey);  },  self)
-                        .on('remove', function(model) {
-                            this.trigger('remove:'+associatedKey, model);
-                            if (destroyHostModelWhenCollectionIsEmptied && collection.size() === 0) this.destroy();
+                        .on('remove', function(model, collection, options) {
+                            this.trigger('remove:'+associatedKey, model, collection, options);
+                            if (destroyHostModelWhenCollectionIsEmptied && collection.size() === 0) this.destroy(options);
                         },  self);
                     return collection;
                 };
@@ -220,8 +231,8 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     if (!associatedModel) return;
                     hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey);
                     associatedModel.on('destroy', function() {
-                        if (this.get(associatedKey) === associatedModel) this.unset(associatedKey);
-                    },  hostModel);
+                        if (hostModel.get(associatedKey) === associatedModel) hostModel.unset(associatedKey);
+                    });
                 };
                 self.on('change:'+associatedKey, handler);
             };
@@ -240,7 +251,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 var handler = function(hostModel, associatedModel, options) {
                     if (!associatedModel) return;
                     hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey);
-                    associatedModel.on('destroy', function() {  this.destroy();  }, hostModel);
+                    associatedModel.on('destroy', function(model, collection, options) {  hostModel.destroy(options);  });
                 };
                 self.on('change:'+associatedKey, handler);
             };

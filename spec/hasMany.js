@@ -275,12 +275,15 @@ describe("HasMany", function() {
         });
 
         it("triggers a remove:associationCollectionKey event on the model to which the hasMany is assigned", function() {
-            spyOn(this.subject, 'trigger');
             var associatedModel = new AssociatedModel();
             this.subject.get('associatedModels').add(associatedModel);
-            this.subject.get('associatedModels').remove(associatedModel);
 
-            expect(this.subject.trigger).toHaveBeenCalledWith('remove:associatedModels', associatedModel);
+            spyOn(this.subject, 'trigger');
+            var collection = associatedModel.collection,
+                options = jasmine.createSpy('options');
+            this.subject.get('associatedModels').remove(associatedModel, options);
+
+            expect(this.subject.trigger).toHaveBeenCalledWith('remove:associatedModels', associatedModel, collection, options);
         });
     });
 
