@@ -230,8 +230,8 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 var handler = function(hostModel, associatedModel, options) {
                     if (!associatedModel) return;
                     hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey);
-                    associatedModel.on('destroy', function() {
-                        if (hostModel.get(associatedKey) === associatedModel) hostModel.unset(associatedKey);
+                    associatedModel.on('destroy', function(model, collection, options) {
+                        if (hostModel.get(associatedKey) === associatedModel) hostModel.unset(associatedKey, options);
                     });
                 };
                 self.on('change:'+associatedKey, handler);
