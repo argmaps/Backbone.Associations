@@ -26,9 +26,9 @@ Backbone.AssociativeModel = Backbone.Model.extend({
     },
 
     prepForAssociations: function() {
-        var associations = this._associations = []; //association descriptors
+        this._associations = []; //association descriptors
         this._associations.add = function(associationKey) {
-            if (!_(associations).chain().pluck('name').include(associationKey).value()) associations.push({name: associationKey});
+            if (!_(this).chain().pluck('name').include(associationKey).value()) this.push({name: associationKey});
         };
         this._associationsToExcludeFromJSON = [];
 
@@ -105,9 +105,12 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 return assocObj.viaReverseKey && _(  assocObj.viaReverseKey.split(/\s+/)  ).include(associatedKey);
             },
 
+            rootNameSpace = Backbone.AssociativeModel.prototype._namespace,
+
+            modelSubNameSpaces = _(_(rootNameSpace).chain().keys().select(function(k) { return !_.isFunction(rootNameSpace[k]); }).value()),
+
             associationNameIsNameOfHostModelsClass = function(assocObj) {
                 var classifyAssociationName = function(modelName) {
-                        var rootNameSpace = Backbone.AssociativeModel.prototype._namespace;
                         if (rootNameSpace[modelName]) return rootNameSpace[modelName];
 
                         if (modelName.charAt(modelName.length - 1) === 's') {
@@ -115,18 +118,17 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                             if (rootNameSpace[modelNameWithoutTrailingS]) return rootNameSpace[modelNameWithoutTrailingS];
                         }
 
-                        var modelSubNameSpaces = _(rootNameSpace).chain().keys().select(function(k) { return !_.isFunction(rootNameSpace[k]); }).value(),
-                            modelSubNameSpaceForThisModel = _(modelSubNameSpaces).detect(function(ns) {
-                                var original = _.isFunction(rootNameSpace[ns][modelName]) && new rootNameSpace[ns][modelName]() instanceof Backbone.AssociativeModel,
-                                    withoutTrailingS;
+                        var modelSubNameSpaceForThisModel = modelSubNameSpaces.detect(function(ns) {
+                            var original = _.isFunction(rootNameSpace[ns][modelName]) && new rootNameSpace[ns][modelName]() instanceof Backbone.AssociativeModel,
+                                withoutTrailingS;
 
-                                if (modelNameWithoutTrailingS) {
-                                    withoutTrailingS = _.isFunction(rootNameSpace[ns][modelNameWithoutTrailingS])
-                                                            && new rootNameSpace[ns][modelNameWithoutTrailingS]() instanceof Backbone.AssociativeModel;
-                                }
+                            if (modelNameWithoutTrailingS) {
+                                withoutTrailingS = _.isFunction(rootNameSpace[ns][modelNameWithoutTrailingS])
+                                                        && new rootNameSpace[ns][modelNameWithoutTrailingS]() instanceof Backbone.AssociativeModel;
+                            }
 
-                                return original || withoutTrailingS;
-                            });
+                            return original || withoutTrailingS;
+                        });
 
                         if (rootNameSpace[modelSubNameSpaceForThisModel]) {
                             if (!modelNameWithoutTrailingS) return rootNameSpace[modelSubNameSpaceForThisModel][modelName];
@@ -172,11 +174,11 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 var prepHasManyCollection = function(associatedKey, collection) {
                     collection || (collection = new Backbone.Collection());
                     collection.on('destroy', collection.remove, collection)
-                        .on('add', function(model) {  this.trigger('add:'+associatedKey, model);  },  self)
+                        .on('add', function(model, collection, options) {  this.trigger('add:'+associatedKey, model, collection, options);  },  self)
                         .on('add', function(model) {  this.setReciprocalAssociationIfPresent(model, associatedKey);  },  self)
                         .on('remove', function(model, collection, options) {
                             this.trigger('remove:'+associatedKey, model, collection, options);
-                            if (destroyHostModelWhenCollectionIsEmptied && collection.size() === 0) this.destroy(options);
+                            if (destroyHostModelWhenCollectionIsEmptied && collection.isEmpty()) this.destroy(options);
                         },  self);
                     return collection;
                 };
@@ -206,7 +208,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                         handler = function(hostModel, fromAttributeVal) {
                             if (!!fromAttributeVal && hostModel.has(attrName)) {
                                 if (aggregateCollection.include(fromAttributeVal) === false) aggregateCollection.add(fromAttributeVal);
-                                if (hostModel.previous(attrName)) aggregateCollection.remove(hostModel.previous(attrName));
+                                if (hostModel.previous(attrName) && hostModel.previous(attrName) !== fromAttributeVal) aggregateCollection.remove(hostModel.previous(attrName));
                             } else {
                                aggregateCollection.remove(fromAttributeVal);
                             }

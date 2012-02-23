@@ -43,7 +43,7 @@ House = Backbone.RelationalModel.extend({
 To use Backbone-Associative,
 
 1. Extend your model classes from Backbone.AssociativeModel.
-2. Add an `associations` function as an instance property on your Backbone.AssociativeModel classes.
+2. Add an `associations` function as an instance property on your Backbone.AssociativeModel classes. Note: associations that depend on other associations should be specified *after* the associations on which they depend.
 
 ```javascript
     Article = Backbone.AssociativeModel.extend({
