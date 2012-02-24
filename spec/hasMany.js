@@ -268,10 +268,13 @@ describe("HasMany", function() {
 
         it("triggers an add:associationCollectionKey event on the model to which the hasMany is assigned", function() {
             spyOn(this.subject, 'trigger');
-            var associatedModel = new AssociatedModel();
-            this.subject.get('associatedModels').add(associatedModel);
+            var associatedModel = new AssociatedModel(),
+                associatedModelsCollection = this.subject.get('associatedModels'),
+                options = {};
 
-            expect(this.subject.trigger).toHaveBeenCalledWith('add:associatedModels', associatedModel);
+            associatedModelsCollection.add(associatedModel, options);
+
+            expect(this.subject.trigger).toHaveBeenCalledWith('add:associatedModels', associatedModel, associatedModelsCollection, options);
         });
 
         it("triggers a remove:associationCollectionKey event on the model to which the hasMany is assigned", function() {

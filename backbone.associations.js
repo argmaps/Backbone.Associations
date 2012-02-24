@@ -168,18 +168,15 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         }
     },
 
-    hasMany: function(associatedKey, destroyHostModelWhenCollectionIsEmptied) {
+    hasMany: function(associatedKey) {
         var self = this,
             setupHasMany = function(associatedKey, collection) {
                 var prepHasManyCollection = function(associatedKey, collection) {
                     collection || (collection = new Backbone.Collection());
                     collection.on('destroy', collection.remove, collection)
-                        .on('add', function(model, collection, options) {  this.trigger('add:'+associatedKey, model, collection, options);  },  self)
-                        .on('add', function(model) {  this.setReciprocalAssociationIfPresent(model, associatedKey);  },  self)
-                        .on('remove', function(model, collection, options) {
-                            this.trigger('remove:'+associatedKey, model, collection, options);
-                            if (destroyHostModelWhenCollectionIsEmptied && collection.isEmpty()) this.destroy(options);
-                        },  self);
+                        .on('add', function(model, collection, options) {  self.trigger('add:'+associatedKey, model, collection, options);  })
+                        .on('add', function(model) {  self.setReciprocalAssociationIfPresent(model, associatedKey);  })
+                        .on('remove', function(model, collection, options) {  self.trigger('remove:'+associatedKey, model, collection, options);});
                     return collection;
                 };
 
@@ -240,11 +237,6 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             };
 
         return this._setupAssociation(associatedKey, setHasOneBindings);
-    },
-
-    belongsToMany: function(associatedKey) {
-        var destroyHostModelWhenCollectionIsEmptied = true;
-        return this.hasMany(associatedKey, destroyHostModelWhenCollectionIsEmptied);
     },
 
     belongsTo: function(associatedKey) {

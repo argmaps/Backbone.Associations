@@ -61,13 +61,11 @@ To use Backbone-Associative,
 # Associations
 * `hasOne` and `hasMany` associations indicate that another class has a
 reference to the class to which you assign the `has` association.
-* `belongsToOne` and `belongsToMany` associations are the dependent side of
-  the association.  When a model's `belongsTo` association is destroyed,
+* `belongsTo` associations are the dependent side of the association.  When a model's `belongsTo` association is destroyed,
 it is destroyed as well.
 
 # Options
-* `collection` - pass a custom collection model class to be used for a
-  `hasMany` or `belongsToMany` association.
+* `collection` - pass a custom collection model class to be used for a `hasMany` association.
 * `viaKey` means "pluck the key named X and assign it to an attribute on the model in which this association is being declared (the attribute's name is the association's name)"
 * `viaReverseKey` means "where the model in which this association is being declared is identified by one of the space-separated keys that follow"
 
