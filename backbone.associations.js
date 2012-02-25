@@ -1,12 +1,4 @@
 Backbone.AssociativeModel = Backbone.Model.extend({
-    _namespace: window,
-
-    //Optionally, call `Backbone.AssociativeModel.prototype.namespace` to set a namespace in which Backbone-Associative should
-    //search for your models (used in `viaReverseKey` to look up models).  Models can be 2 levels deep.  Defaults to `window`.
-    namespace: function(nameSpace) {
-        this._namespace = _.isString(nameSpace) ? eval(nameSpace) : nameSpace;
-    },
-
     constructor: function(attributes, options) {
         Backbone.Model.prototype.constructor.apply(this, arguments);
         //trigger special change events to update attributes obtained through associations when those associations are set during initial instantiation
@@ -97,7 +89,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
     setReciprocalAssociationIfPresent: function(associatedModel, associatedKey) {
         //3 valid cases in which we set reciprocal association:
         //1: viaReverseKey === associatedKey and there is only one association w/ viaReverseKey === associatedKey
-        //2: viaReverseKey === associatedKey && associationName === model's class name & there is only one like this
+        //2: viaReverseKey === associatedKey && associationName === model's class name & there is only one like this (associationName here means the name of the attribute whose value is an associated model or collection)
         //3: there is no association with viaReverseKey === associatedKey but there is one and only one association with association name === model's class name
         if (_.isUndefined(associatedModel._associations)) return;
 
@@ -105,9 +97,8 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 return assocObj.viaReverseKey && _(  assocObj.viaReverseKey.split(/\s+/)  ).include(associatedKey);
             },
 
-            rootNameSpace = Backbone.AssociativeModel.prototype._namespace,
-
-            modelSubNameSpaces = _(_(rootNameSpace).chain().keys().select(function(k) { return !_.isFunction(rootNameSpace[k]); }).value()),
+            rootNameSpace = Backbone.AssociativeModel._namespace,
+            subNameSpaces = _(_(rootNameSpace).chain().keys().select(function(k) { return !_.isFunction(rootNameSpace[k]); }).value()),
 
             associationNameIsNameOfHostModelsClass = function(assocObj) {
                 var classifyAssociationName = function(modelName) {
@@ -118,7 +109,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                             if (rootNameSpace[modelNameWithoutTrailingS]) return rootNameSpace[modelNameWithoutTrailingS];
                         }
 
-                        var modelSubNameSpaceForThisModel = modelSubNameSpaces.detect(function(ns) {
+                        var modelSubNameSpaceForThisModel = subNameSpaces.detect(function(ns) {
                             var original = _.isFunction(rootNameSpace[ns][modelName]) && new rootNameSpace[ns][modelName]() instanceof Backbone.AssociativeModel,
                                 withoutTrailingS;
 
@@ -272,4 +263,14 @@ Backbone.AssociativeModel = Backbone.Model.extend({
 
         return json;
     }
+},
+{
+    //Optionally, call `Backbone.AssociativeModel.namespace` to set a namespace in which Backbone-Associative should
+    //search for your models (used in `viaReverseKey` to look up models).  You can pass either a string to be eval'ed,
+    //or a reference to the namespace object.  Models can be 2 levels deep.  Defaults to `window`.
+    namespace: function(nameSpace) {
+        this._namespace = _.isString(nameSpace) ? eval(nameSpace) : nameSpace;
+    },
+
+    _namespace: window
 });
