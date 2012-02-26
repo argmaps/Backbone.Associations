@@ -57,7 +57,10 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                                 });
 
                             })
-                            .on('remove', function(model) {  self.get(associatedKey).remove(model.get(key));  });
+                            .on('remove', function(model) {
+                                var targetModel = model.get(key);
+                                if (associatedCollection.include(targetModel)) associatedCollection.remove(targetModel);
+                            });
                         } else {
                             //when modelThroughWhichModelFoundThroughIsFound is set, set modelFoundThrough
                             var handler = function(hostModel, joinModel, options) {
