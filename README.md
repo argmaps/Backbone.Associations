@@ -69,6 +69,15 @@ it is destroyed as well.
 * `viaKey` means "pluck the key named X and assign it to an attribute on the model in which this association is being declared (the attribute's name is the association's name)"
 * `viaReverseKey` means "where the model in which this association is being declared is identified by one of the space-separated keys that follow"
 
+## Configuration
+Backbone.AssociativeModel has two methods for configuration:
+1.  `Backbone.AssociativeModel.namespace`, which accepts a string or
+    object to be used as the root namespace when looking up reverse
+associations.
+2.  `Backbone.AssociativeModel.defaultCollection`, which accepts a
+    string or descendant of Backbone.Collection to be used as the
+default collection for new HasMany collections.
+
 # License
 MIT.  Use and enjoy!
 

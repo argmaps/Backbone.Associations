@@ -166,7 +166,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         var self = this,
             setupHasMany = function(associatedKey, collection) {
                 var prepHasManyCollection = function(associatedKey, collection) {
-                    collection || (collection = new Backbone.Collection());
+                    collection || (collection = new Backbone.AssociativeModel._defaultCollection());
                     collection.on('destroy', collection.remove, collection)
                         .on('add', function(model, collection, options) {  self.trigger('add:'+associatedKey, model, collection, options);  })
                         .on('add', function(model) {  self.setReciprocalAssociationIfPresent(model, associatedKey);  })
@@ -275,5 +275,11 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         this._namespace = _.isString(nameSpace) ? eval(nameSpace) : nameSpace;
     },
 
-    _namespace: window
+    _namespace: window,
+
+    defaultCollection: function(defaultCollection) {
+        this._defaultCollection = _.isString(defaultCollection) ? eval(defaultCollection) : defaultCollection;
+    },
+
+    _defaultCollection: Backbone.Collection
 });
