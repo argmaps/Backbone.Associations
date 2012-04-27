@@ -221,7 +221,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         var self = this,
             setHasOneBindings = function(associatedKey) {
                 var handler = function(hostModel, associatedModel, options) {
-                    if (!associatedModel) return;
+                    if (!associatedModel || associatedModel instanceof Backbone.AssociativeModel === false) return;
                     hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey);
                     associatedModel.on('destroy', function(model, collection, options) {
                         if (hostModel.get(associatedKey) === associatedModel) hostModel.unset(associatedKey, options);
@@ -237,7 +237,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         var self = this,
             setBelongsToBindings = function(associatedKey) {
                 var handler = function(hostModel, associatedModel, options) {
-                    if (!associatedModel) return;
+                    if (!associatedModel || associatedModel instanceof Backbone.AssociativeModel === false) return;
                     hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey);
                     associatedModel.on('destroy', function(model, collection, options) {  hostModel.destroy(options);  });
                 };
