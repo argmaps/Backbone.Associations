@@ -26,24 +26,6 @@ describe("HasOne", function() {
         });
     });
 
-    describe("when setting a hasOne association with includeInJSON = false", function() {
-        beforeEach(function() {
-            AssociatedModel = Backbone.AssociativeModel.extend({});
-            SubjectModel = Backbone.AssociativeModel.extend({
-                associations: function() {
-                    this.hasOne('associatedModel').includeInJSON(false);
-                }
-            });
-
-            var associatedModel = new AssociatedModel();
-            this.subject = new SubjectModel({'associatedModel': associatedModel});
-        });
-
-        it("subject#toJSON does not include a key for 'associatedModelKey'", function() {
-            expect(_(this.subject.toJSON()).keys()).not.toContain('associatedModel');
-        });
-    });
-
     describe("when setting a hasOne association with `through`", function() {
         beforeEach(function() {
             JoinModelClass = Backbone.AssociativeModel.extend({

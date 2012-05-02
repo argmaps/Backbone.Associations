@@ -22,7 +22,6 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         this._associations.add = function(associationKey) {
             if (!_(this).chain().pluck('name').include(associationKey).value()) this.push({name: associationKey});
         };
-        this._associationsToExcludeFromJSON = [];
 
         this._preppedForAssociations = true;
     },
@@ -77,11 +76,6 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             viaReverseKey: function(reverseAssociationKey) {
                 var associationObj = _(self._associations).detect(function(assocObj) {return assocObj.name === associatedKey;});
                 associationObj.viaReverseKey = reverseAssociationKey;
-                return returnObj;
-            },
-
-            includeInJSON: function(value) {
-                if (value === false) self._associationsToExcludeFromJSON.push(associatedKey);
                 return returnObj;
             }
         };
@@ -252,8 +246,6 @@ Backbone.AssociativeModel = Backbone.Model.extend({
 
         _.each(this.attributes, function(value, key) {
             if (_(this._associations).chain().pluck('name').include(key).value()) {
-                if (_(this._associationsToExcludeFromJSON).include(key)) return;
-
                 if (value instanceof Backbone.Collection && value.size() > 0) {
                     json[key] = value.map(function(m) {return m.toJSON();});
                 } else if (value instanceof Backbone.AssociativeModel) {

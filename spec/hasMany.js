@@ -89,25 +89,6 @@ describe("HasMany", function() {
         });
     });
 
-    describe("when setting a hasMany association with includeInJSON = false", function() {
-        beforeEach(function() {
-            AssociatedModel = Backbone.AssociativeModel.extend({});
-            SubjectModel = Backbone.AssociativeModel.extend({
-                associations: function() {
-                    this.hasMany('associatedModels').includeInJSON(false);
-                }
-            });
-
-            this.subject = new SubjectModel();
-            var associatedModel = new AssociatedModel();
-            this.subject.get('associatedModels').add(associatedModel);
-        });
-
-        it("subject#toJSON does not include a key for 'associatedCollectionKey'", function() {
-            expect(_(this.subject.toJSON()).keys()).not.toContain('associatedModels');
-        });
-    });
-
     describe("when setting a hasMany association with `through` set to an attribute that is a collection of models", function() {
         beforeEach(function() {
             JoinModelClass = Backbone.AssociativeModel.extend({
