@@ -153,4 +153,42 @@ describe("HasOne", function() {
             expect(this.independentModel.get('evenOtherDependentModels').first()).toBe(evenOtherModel);
         });
     });
+
+    describe("Using the #viaReverseKey method in conjunction with the #as(associationName) method", function() {
+        beforeEach(function() {
+            LogicalRelationshipInMap = Backbone.AssociativeModel.extend({
+            });
+
+            EvidencesRelationshipLayoutStandard = Backbone.AssociativeModel.extend({
+                associations: function() {
+                    this.hasOne('relationshipInMap');
+                }
+            });
+
+            EvidencesRelationshipLayoutOutline = Backbone.AssociativeModel.extend({
+                associations: function() {
+                    this.hasOne('relationshipInMap');
+                }
+            });
+
+            EvidencesRelationshipInMap = LogicalRelationshipInMap.extend({
+                associations: function() {
+                    this.hasOne('evidencesRelationshipLayoutStandard').viaReverseKey('relationshipInMap').as('layoutStandard');
+                    this.hasOne('evidencesRelationshipLayoutOutline').viaReverseKey('relationshipInMap').as('layoutOutline');
+                }
+            });
+
+            this.evidencesRelationshipInMap = new EvidencesRelationshipInMap();
+            this.evidencesRelationshipLayoutStandard = new EvidencesRelationshipLayoutStandard({relationshipInMap: this.evidencesRelationshipInMap});
+            this.evidencesRelationshipLayoutOutline = new EvidencesRelationshipLayoutOutline({relationshipInMap: this.evidencesRelationshipInMap});
+        });
+
+        it("sets layoutStandard on evidencesRelationshipInMap to layoutStandard", function() {
+            expect(this.evidencesRelationshipInMap.get('layoutStandard')).toBe(this.evidencesRelationshipLayoutStandard);
+        });
+
+        it("sets layoutOutline on evidencesRelationshipInMap to layoutOutline", function() {
+            expect(this.evidencesRelationshipInMap.get('layoutOutline')).toBe(this.evidencesRelationshipLayoutOutline);
+        });
+    });
 });

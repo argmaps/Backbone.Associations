@@ -76,7 +76,11 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             viaReverseKey: function(reverseAssociationKey) {
                 var associationObj = _(self._associations).detect(function(assocObj) {return assocObj.name === associatedKey;});
                 associationObj.viaReverseKey = reverseAssociationKey;
-                return returnObj;
+                return _.extend(returnObj, {
+                    as: function(associationName) {
+                        associationObj.asAssociationName = associationName;
+                    }
+                });
             }
         };
 
@@ -131,7 +135,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             },
 
             setReciprocalAssociation = function(assocObj) {
-                var attrName = assocObj.aliasName || assocObj.name,
+                var attrName = assocObj.asAssociationName || assocObj.name,
                     attr = associatedModel.get(attrName);
                 if (attr instanceof Backbone.Collection) {
                     //screen out additions that could be duplicate due to change events fired on initial instantiation
