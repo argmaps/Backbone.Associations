@@ -249,14 +249,14 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         var json = {};
 
         _.each(this.attributes, function(value, key) {
-            if (_(this._associations).chain().pluck('name').include(key).value()) {
-                if (value instanceof Backbone.Collection && value.size() > 0) {
-                    json[key] = value.map(function(m) {return m.toJSON();});
-                } else if (value instanceof Backbone.AssociativeModel) {
-                    json[key] = value.toJSON();
+            if (value) {
+                if (value.toJSON) {
+                    if (!value.isEmpty || !value.isEmpty()) {
+                        json[key] = value.toJSON();
+                    }
+                } else {
+                    json[key] = value;
                 }
-            } else {
-                json[key] = value;
             }
         },  this  );
 
