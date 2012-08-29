@@ -87,7 +87,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         return returnObj;
     },
 
-    setReciprocalAssociationIfPresent: function(associatedModel, associatedKey) {
+    setReciprocalAssociationIfPresent: function(associatedModel, associatedKey, options) {
         //3 valid cases in which we set reciprocal association:
         //1: viaReverseKey === associatedKey and there is only one association w/ viaReverseKey === associatedKey
         //2: viaReverseKey === associatedKey && associationName === model's class name & there is only one like this (associationName here means the name of the attribute whose value is an associated model or collection)
@@ -139,9 +139,9 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     attr = associatedModel.get(attrName);
                 if (attr instanceof Backbone.Collection) {
                     //screen out additions that could be duplicate due to change events fired on initial instantiation
-                    if (attr.include(this) === false) attr.add(this);
+                    if (attr.include(this) === false) attr.add(this, options);
                 } else {
-                    associatedModel.set(attrName, this);
+                    associatedModel.set(attrName, this, options);
                     this.on('destroy', function() {  if (associatedModel.get(attrName) === this) associatedModel.unset(attrName);  },  this);
                 }
             };
@@ -167,7 +167,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     collection || (collection = new Backbone.AssociativeModel._defaultCollection());
                     collection.on('destroy', collection.remove, collection)
                         .on('add', function(model, collection, options) {  self.trigger('add:'+associatedKey, model, collection, options);  })
-                        .on('add', function(model) {  self.setReciprocalAssociationIfPresent(model, associatedKey);  })
+                        .on('add', function(model, collection, options) {  self.setReciprocalAssociationIfPresent(model, associatedKey, options);  })
                         .on('remove', function(model, collection, options) {  self.trigger('remove:'+associatedKey, model, collection, options);});
                     return collection;
                 };
@@ -220,7 +220,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             setHasOneBindings = function(associatedKey) {
                 var handler = function(hostModel, associatedModel, options) {
                     if (!associatedModel || associatedModel instanceof Backbone.AssociativeModel === false) return;
-                    hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey);
+                    hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey, options);
                     associatedModel.on('destroy', function(model, collection, options) {
                         if (hostModel.get(associatedKey) === associatedModel) hostModel.unset(associatedKey, options);
                     });
@@ -236,7 +236,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             setBelongsToBindings = function(associatedKey) {
                 var handler = function(hostModel, associatedModel, options) {
                     if (!associatedModel || associatedModel instanceof Backbone.AssociativeModel === false) return;
-                    hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey);
+                    hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey, options);
                     associatedModel.on('destroy', function(model, collection, options) {  hostModel.destroy(options);  });
                 };
                 self.on('change:'+associatedKey, handler);
