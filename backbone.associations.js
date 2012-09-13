@@ -1,8 +1,37 @@
 Backbone.AssociativeModel = Backbone.Model.extend({
     constructor: function(attributes, options) {
+        var attrsToDelegate = {},
+            delegatedAttrNames = _(_(this.delegateAttributes).chain().keys().map(function(k) {
+                return k.split(/\s+/);
+            }).flatten().value());
+
+
+        //extract any delegate attrs from attributes hash
+        _(attributes).each(function(value, attrKey) {
+            if (delegatedAttrNames.include(attrKey)) {
+                attrsToDelegate[attrKey] = value;
+                delete attributes[attrKey];
+            }
+        },  this  );
+
+        //set all non-delegated attrs via normal instantiation
         Backbone.Model.prototype.constructor.apply(this, arguments);
+
         //trigger special change events to update attributes obtained through associations when those associations are set during initial instantiation
         _(this.attributes).each(function(v,k) {  this.trigger('change:'+k, this, this.get(k), options);  },  this);
+
+        // set up delegation for delegated attributes
+        this._delegateAttributes(this.delegateAttributes);
+
+        //set all delegated attrs now that their associations have been set
+        var valid = this.set(attrsToDelegate);
+
+        //set all delegate methods now that their associations have been set
+        _(this.delegateMethods).each(function(delegateModelName, delegateMethodName){
+            this._delegateMethods(delegateMethodName).toAttribute(delegateModelName);
+        },  this  );
+
+        return valid;
     },
 
     set: function(attributes, options) {
@@ -261,6 +290,145 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         },  this  );
 
         return json;
+    },
+
+    /************************ DELEGATION ************************/
+    // Override this with a hash of attributes to delegate.
+    // Keys are space-delimited attribute names; values are delegate model names.
+    delegateAttributes: {},
+
+    // Override this with a hash of methods to delegate.
+    // Keys are space-delimited method names; values are delegate model names.
+    delegateMethods: {},
+
+    _delegateMethods: function(methodName) {
+        var self = this,
+            methodNames = methodName.split(/\s+/);
+
+        return {
+            toAttribute: function(delegateModelAttributeName) {
+                _.each(methodNames, function(methodName) {
+                    self[methodName] = function() {
+                        var delegateModel = this.get(delegateModelAttributeName);
+                        return delegateModel ? delegateModel[methodName].apply(delegateModel, arguments) : undefined;
+                    };
+                });
+            }
+        };
+    },
+
+    delegateAttribute: function(attrName) {
+        return this.delegateAttributesInternal(attrName);
+    },
+
+    _delegateAttributes: function(delegatedAttrMap) {
+    /*
+        looks like:
+        {
+            'attr1 attr2 attr3': 'delegateModel'
+        }
+     */
+        _(delegatedAttrMap).each(function(delegateModel, delegatedAttributes) {
+            this.delegateAttributesInternal(delegatedAttributes).toAttribute(delegateModel);
+        },  this  );
+    },
+
+    delegateAttributesInternal: function(attributeNames) {
+        var self = this,
+            delegatedAttrsMap = this.delegatedAttrsMap || this.setupDelegatedAttributes();
+
+        return {
+            toAttribute: function(delegateModelAttributeName) {
+                var delegateModel = self.get(delegateModelAttributeName),
+                    delegatedAttrChanged;
+
+                var attributeNameList = attributeNames.split(/\s+/);
+                _.each(attributeNameList, function(attributeName) {
+                    delegatedAttrsMap[attributeName] = delegateModelAttributeName;
+
+                    delegatedAttrChanged = function(delegateModel, changedAttrVal, options) {
+                        this.trigger('change:'+attributeName, delegateModel, changedAttrVal, options);
+                    };
+
+                    if (delegateModel) {
+                        delegateModel.on('change:'+attributeName, delegatedAttrChanged, self);
+
+                        self.on('change:'+delegateModelAttributeName, function(delegatingModel, delegateModel, options) {
+                            if (!delegateModel) delegatingModel.off('change:'+attributeName, delegatedAttrChanged, self);
+                        });
+                    } else {
+                        self.on('change:'+delegateModelAttributeName, function(delegatingModel, delegateModel, options) {
+                            if (delegateModel) delegatingModel.on('change:'+attributeName, delegatedAttrChanged, self);
+                        });
+                    }
+                });
+            }
+        };
+    },
+
+    setupDelegatedAttributes: function() {
+        this.delegatedAttrsMap = {};
+        this.get = this.getWithDelegates;
+        this.set = this.setWithDelegates;
+        return this.delegatedAttrsMap;
+    },
+
+    getWithDelegates: function(attrName) {
+        //NOTE: This overrides Backbone.AssociativeModel.get()
+        var directAttrVal = this.attributes[attrName];
+        if (typeof directAttrVal !== 'undefined') return directAttrVal;
+
+        if (this.delegatedAttrsMap[attrName]) {
+            var delegateModel = this.get(this.delegatedAttrsMap[attrName]);
+            if (delegateModel) return delegateModel.get(attrName);
+        }
+    },
+
+    setWithDelegates: function(key, value, options) {
+        //NOTE: This overrides Backbone.AssociativeModel.set()
+        var attrHash;
+        if (_.isObject(key)) {
+            attrHash = _.clone(key); //by cloning we avoid losing delegated values on redo of #setWithUndoableCmd above
+            options = value;
+        } else {
+            attrHash = {};
+            attrHash[key] = value;
+        }
+
+        options || (options = {});
+
+        // Run validation on host model before setting, so that host
+        // model can run its own validations against delegated
+        // attributes.
+        if (!this._validate(attrHash, options)) return false;
+
+        var delegatedAttrsMap = this.delegatedAttrsMap,
+            delegatedAttrNames = _(attrHash).chain()
+                                            .keys()
+                                            .select(function(key) {
+                                                return _(delegatedAttrsMap).chain().keys().include(key).value();
+                                            })
+                                            .value();
+
+        if (delegatedAttrNames.length > 0) {
+            var delegatedAttrsGroupedByDelegateModel =  _(delegatedAttrNames).groupBy(function(name) {  return delegatedAttrsMap[name];  }),
+                delegateAttrHashForOneModel, delegateModel;
+
+            _(delegatedAttrsGroupedByDelegateModel).each(function(delegateAttrNameArray, delegateModelName) {
+                delegateAttrHashForOneModel = {};
+
+                _(delegateAttrNameArray).each(function(delegateAttrName) {
+                    delegateAttrHashForOneModel[delegateAttrName] = attrHash[delegateAttrName];
+                    delete attrHash[delegateAttrName];
+                });
+
+                delegateModel = this.get(delegateModelName);
+                delegateModel.set(delegateAttrHashForOneModel, options);
+            },  this  );
+        }
+
+        if (  _(attrHash).isEmpty() === false  )  Backbone.AssociativeModel.prototype.set.apply(this, [attrHash, options]);
+        return this;
     }
 },
 {
