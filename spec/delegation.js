@@ -15,14 +15,27 @@ describe("`delegateAttributes` property, for delegating attributes on instantiat
         });
 
         this.delegate = new DelegateModel();
+    });
+
+    it("does not set the attribute directly on the delegating model", function() {
         this.delegating = new ModelWithDelegatedAttr({
             delegateModel: this.delegate,
             delegatedAttrName: 'Yes'
         });
+        expect(this.delegating.attributes.delegatedAttrName).not.toBeDefined();
     });
 
-    it("does not set the attribute directly on the delegating model", function() {
-        expect(this.delegating.attributes.delegatedAttrName).not.toBeDefined();
+    it("delegated attributes are available in change:associationName callbacks", function() {
+        ModelWithDelegatedAttr.prototype.initialize = function() {
+            this.on('change:delegateModel', function(model, options) {
+                expect(this.get('delegatedAttrName')).toEqual('Yes');
+            },  this  );
+        };
+
+        this.delegating = new ModelWithDelegatedAttr({
+            delegateModel: this.delegate,
+            delegatedAttrName: 'Yes'
+        });
     });
 });
 
@@ -199,31 +212,3 @@ describe("#delegateAttribute", function() {
         this.subject.off('change:delegatedAttrName', this.testPreviousCallBack, this.subject); //necessary otherwise later tests fail
     });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

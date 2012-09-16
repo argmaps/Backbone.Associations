@@ -17,14 +17,14 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         //set all non-delegated attrs via normal instantiation
         Backbone.Model.prototype.constructor.apply(this, arguments);
 
-        //trigger special change events to update attributes obtained through associations when those associations are set during initial instantiation
-        _(this.attributes).each(function(v,k) {  this.trigger('change:'+k, this, this.get(k), options);  },  this);
-
         // set up delegation for delegated attributes
         this._delegateAttributes(this.delegateAttributes);
 
         //set all delegated attrs now that their associations have been set
         var valid = this.set(attrsToDelegate);
+
+        //trigger special change events to update attributes obtained through associations when those associations are set during initial instantiation
+        _(this.attributes).each(function(v,k) {  this.trigger('change:'+k, this, this.get(k), options);  },  this);
 
         //set all delegate methods now that their associations have been set
         _(this.delegateMethods).each(function(delegateModelName, delegateMethodName){
