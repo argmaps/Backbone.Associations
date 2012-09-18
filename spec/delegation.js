@@ -190,14 +190,31 @@ describe("#delegateAttribute", function() {
         expect(this.subject.validate).wasCalled();
     });
 
-    it("change:attrName events fire on delegating model for attrs it has delegated", function() {
-        this.changeAttrCallBack = function(delegateModel, value, options){
-            expect(this.get('delegatedAttrName') === 'changed').toBeTruthy();
-        };
+    it("when a delegated attr is set on the delegating model, a change:attrName event fires on the delegating model", function() {
+        var callback = jasmine.createSpy();
 
-        this.subject.on('change:delegatedAttrName', this.changeAttrCallBack, this.subject);
+        this.subject.on('change:delegatedAttrName', callback, this.subject);
         this.subject.set('delegatedAttrName', 'changed');
-        this.subject.off('change:delegatedAttrName', this.changeAttrCallBack, this.subject); //necessary otherwise later tests fail
+        this.subject.off('change:delegatedAttrName', callback, this.subject); //necessary otherwise later tests fail
+        expect(callback).toHaveBeenCalledWith(this.delegateModel, 'changed', {changes: { delegatedAttrName: true }});
+    });
+
+    it("when a delegated attr is set on the model to which it is delegated, a change:attrName event fires on the delegating model", function() {
+        var callback = jasmine.createSpy();
+
+        this.subject.on('change:delegatedAttrName', callback, this.subject);
+        this.delegateModel.set('delegatedAttrName', 'changed');
+        this.subject.off('change:delegatedAttrName', callback, this.subject); //necessary otherwise later tests fail
+        expect(callback).toHaveBeenCalledWith(this.delegateModel, 'changed', {changes: { delegatedAttrName: true }});
+    });
+
+    it("when a change:attrName is triggered on the delegate model, a change:attrName event fires on the delegating model", function() {
+        var callback = jasmine.createSpy();
+
+        this.subject.on('change:delegatedAttrName', callback, this.subject);
+        this.delegateModel.trigger('change:delegatedAttrName', this.delegateModel, 'changed');
+        this.subject.off('change:delegatedAttrName', callback, this.subject); //necessary otherwise later tests fail
+        expect(callback).toHaveBeenCalledWith(this.delegateModel, 'changed', undefined);
     });
 
     it("modelWithDelegatedAttr#previous(delegatedAttrName) does not return the previous value of the delegatedAttr, but the delegateModel argument does", function() {
