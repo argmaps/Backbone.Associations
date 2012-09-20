@@ -65,6 +65,26 @@ describe("`delegateMethods` property", function() {
         this.subject = new ModelWithDelegatedAttr({delegateModel: this.delegateModel});
     });
 
+    it("accepts a hash", function() {
+        expect(this.subject.delegatedMethod).toBeDefined();
+        expect(this.subject.delegatedMethod1).toBeDefined();
+        expect(this.subject.delegatedMethod2).toBeDefined();
+    });
+
+    it("accepts a function that returns a hash", function() {
+        ModelWithDelegatedAttr.prototype.delegateMethods = function() {
+            return {
+                'delegatedMethod': 'delegateModel',
+                'delegatedMethod1 delegatedMethod2': 'delegateModel'
+            };
+        };
+
+        this.subject = new ModelWithDelegatedAttr({delegateModel: this.delegateModel});
+        expect(this.subject.delegatedMethod).toBeDefined();
+        expect(this.subject.delegatedMethod1).toBeDefined();
+        expect(this.subject.delegatedMethod2).toBeDefined();
+    });
+
     it("calls the delegated method on the delegate model", function() {
         spyOn(this.delegateModel, "delegatedMethod");
         this.subject.delegatedMethod('howdy');
@@ -99,57 +119,57 @@ describe("`delegateMethods` property", function() {
         expect(this.delegateModel.delegatedMethod1).toHaveBeenCalledWith('yo1');
         expect(this.delegateModel.delegatedMethod2).toHaveBeenCalledWith('yo2');
     });
+});
 
-    describe("#delegateAttributesInternal", function() {
-        beforeEach(function() {
-            DelegateModel = Backbone.AssociativeModel.extend({});
+describe("#delegateAttributesInternal", function() {
+    beforeEach(function() {
+        DelegateModel = Backbone.AssociativeModel.extend({});
 
-            ModelWithDelegatedAttr = Backbone.AssociativeModel.extend({
-                associations: function() {  this.hasOne('delegateModel');  },
-                initialize: function() {
-                    this.delegateAttributesInternal("delegatedAttrName1 delegatedAttrName2").toAttribute("delegateModel");
-                }
-            });
-
-            this.delegateModel = new DelegateModel();
-            this.subject = new ModelWithDelegatedAttr().set({delegateModel: this.delegateModel});
+        ModelWithDelegatedAttr = Backbone.AssociativeModel.extend({
+            associations: function() {  this.hasOne('delegateModel');  },
+            initialize: function() {
+                this.delegateAttributesInternal("delegatedAttrName1 delegatedAttrName2").toAttribute("delegateModel");
+            }
         });
 
-        it("sets the delegated attribute values on the delegate model", function() {
-            this.subject.set({
-                delegatedAttrName1: 300,
-                delegatedAttrName2: 400
-            });
+        this.delegateModel = new DelegateModel();
+        this.subject = new ModelWithDelegatedAttr().set({delegateModel: this.delegateModel});
+    });
 
-            expect(this.delegateModel.get('delegatedAttrName1')).toEqual(300);
-            expect(this.delegateModel.get('delegatedAttrName2')).toEqual(400);
+    it("sets the delegated attribute values on the delegate model", function() {
+        this.subject.set({
+            delegatedAttrName1: 300,
+            delegatedAttrName2: 400
         });
 
-        it("retrieves the delegated attributes from the delegatING model", function() {
+        expect(this.delegateModel.get('delegatedAttrName1')).toEqual(300);
+        expect(this.delegateModel.get('delegatedAttrName2')).toEqual(400);
+    });
+
+    it("retrieves the delegated attributes from the delegatING model", function() {
+        this.delegateModel.set({ delegatedAttrName1: 300 });
+        expect(this.subject.get('delegatedAttrName1')).toEqual(300);
+    });
+
+    describe("when the delegate model is destroyed", function() {
+        it("returns undefined for attributes delegated to the destroyed delegate model", function() {
+            this.delegateModel.set({ delegatedAttrName1: 300 });
+            this.delegateModel.destroy();
+            expect(this.subject.get('delegatedAttrName1')).toBeUndefined();
+        });
+    });
+
+    describe("when a different delegate model is set for the same delegated model attribute", function() {
+        it("the delegatING model retrieves delegated attrs from the new delegate model", function() {
+            //first delegate model
             this.delegateModel.set({ delegatedAttrName1: 300 });
             expect(this.subject.get('delegatedAttrName1')).toEqual(300);
-        });
-
-        describe("when the delegate model is destroyed", function() {
-            it("returns undefined for attributes delegated to the destroyed delegate model", function() {
-                this.delegateModel.set({ delegatedAttrName1: 300 });
-                this.delegateModel.destroy();
-                expect(this.subject.get('delegatedAttrName1')).toBeUndefined();
-            });
-        });
-
-        describe("when a different delegate model is set for the same delegated model attribute", function() {
-            it("the delegatING model retrieves delegated attrs from the new delegate model", function() {
-                //first delegate model
-                this.delegateModel.set({ delegatedAttrName1: 300 });
-                expect(this.subject.get('delegatedAttrName1')).toEqual(300);
 
 
-                //second delegate model
-                var secondDelegateModel = new DelegateModel({delegatedAttrName1: 500});
-                this.subject.set({delegateModel: secondDelegateModel});
-                expect(this.subject.get('delegatedAttrName1')).toEqual(500);
-            });
+            //second delegate model
+            var secondDelegateModel = new DelegateModel({delegatedAttrName1: 500});
+            this.subject.set({delegateModel: secondDelegateModel});
+            expect(this.subject.get('delegatedAttrName1')).toEqual(500);
         });
     });
 });

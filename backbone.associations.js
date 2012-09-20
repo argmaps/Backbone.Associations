@@ -27,7 +27,8 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         _(this.attributes).each(function(v,k) {  this.trigger('change:'+k, this, this.get(k), options);  },  this);
 
         //set all delegate methods now that their associations have been set
-        _(this.delegateMethods).each(function(delegateModelName, delegateMethodName){
+        var methodsToDelegate = _.isFunction(this.delegateMethods) ? this.delegateMethods() : this.delegateMethods;
+        _(methodsToDelegate).each(function(delegateModelName, delegateMethodName){
             this._delegateMethods(delegateMethodName).toAttribute(delegateModelName);
         },  this  );
 
@@ -297,7 +298,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
     // Keys are space-delimited attribute names; values are delegate model names.
     delegateAttributes: {},
 
-    // Override this with a hash of methods to delegate.
+    // Override this with a hash of methods to delegate, or a function returning one.
     // Keys are space-delimited method names; values are delegate model names.
     delegateMethods: {},
 
