@@ -334,4 +334,120 @@ describe("HasMany", function() {
             expect(this.subject.get('associatedModels').first()).not.toBe(this.associatedModel1);
         });
     });
+
+    describe("When using the #viaReverseKey('reverseKeyName') option with the same reverseKeyName for two different associations", function() {
+        describe("when the association names determine which association to assign to", function() {
+            /*
+              *   Note on how this works:
+              *
+              *   When we do:
+              *
+              *   this.circle.set('point', this.point)
+              *
+              *   BBA needs to figure out the attribute on this.point to which it should assign this.circle.
+              *   When we do the above assignment, BBA knows the following:
+              *
+              *   - we're in the context of this.circle
+              *   - this.point has 2 associations that declare 'point' as their reverseKey
+
+              *   In this case, to choose which association to assign to, BBA looks at the association names
+              *   of these 2 associations-- 'circles' and 'squares'.  It chooses to use the association with
+              *   the name 'circles' by chopping off the trailing 's', capitalizing the first letter, and
+              *   finding that there's a model class called RootNameSpace.Circle which is the constructor of
+              *   this.circle.
+              *
+            */
+            beforeEach(function() {
+                Circle = Backbone.AssociativeModel.extend({
+                    associations: function() {
+                        this.belongsTo('point');
+                    }
+                });
+
+                Square = Backbone.AssociativeModel.extend({
+                    associations: function() {
+                        this.belongsTo('point');
+                    }
+                });
+
+                Point = Backbone.AssociativeModel.extend({
+                    associations: function() {
+                        this.hasMany('circles').viaReverseKey('point');
+                        this.hasMany('squares').viaReverseKey('point');
+                    }
+                });
+
+                this.point = new Point();
+                this.circle = new Circle();
+                this.square = new Square();
+
+                this.circle.set('point', this.point);
+                this.square.set('point', this.point);
+            });
+
+            it("setting the model with the reverseKey options on the models that don't sets the latter on the former", function() {
+                //..it makes the models without the reverseKey option available as attributes on the model
+                //that does have the reverseKey options
+                expect(this.point.get('circles').first()).toEqual(this.circle);
+                expect(this.point.get('squares').first()).toEqual(this.square);
+            });
+        });
+
+        describe("when the `modelClassName` option determines the association to assign to", function() {
+            /*
+              *   Note on how this works:
+              *
+              *   When we do:
+              *
+              *   this.circle.set('point', this.point)
+              *
+              *   BBA needs to figure out the attribute on this.point to which it should assign this.circle.
+              *   When we do the above assignment, BBA knows the following:
+              *
+              *   - we're in the context of this.circle
+              *   - this.point has 2 associations that declare 'point' as their reverseKey
+
+              *   In this case, to choose which association to assign to, BBA can't rely on the association
+              *   names as it can above, because RootNameSpace.CirclesThatHavePoint doesn't exist. Instead,
+              *   the user must supply the name of the model class as a string to the modelClassName option.
+              *   Because RootNameSpace.Circle does exist and is the constructor of this.circle, BBA chooses
+              *   to assign this.circle to this.point's 'circlesThatHavePoints' association.
+              *
+            */
+            beforeEach(function() {
+                Circle = Backbone.AssociativeModel.extend({
+                    associations: function() {
+                        this.belongsTo('point');
+                    }
+                });
+
+                Square = Backbone.AssociativeModel.extend({
+                    associations: function() {
+                        this.belongsTo('point');
+                    }
+                });
+
+                Point = Backbone.AssociativeModel.extend({
+                    associations: function() {
+                        this.hasMany('circlesThatHavePoints').viaReverseKey('point').modelClassName('Circle');
+                        this.hasMany('squaresThatHavePoints').viaReverseKey('point').modelClassName('Square');
+                    }
+                });
+
+                this.point = new Point();
+                this.circle = new Circle();
+                this.square = new Square();
+
+                this.circle.set('point', this.point);
+                this.square.set('point', this.point);
+            });
+
+            it("setting the model with the reverseKey options on the models that don't sets the latter on the former", function() {
+                //..it makes the models without the reverseKey option available as attributes on the model
+                //that does have the reverseKey options
+                expect(this.point.get('circlesThatHavePoints').first()).toEqual(this.circle);
+                expect(this.point.get('squaresThatHavePoints').first()).toEqual(this.square);
+            });
+        });
+    });
 });

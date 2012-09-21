@@ -1,5 +1,5 @@
 Backbone-Associative gives simple mono- or bi-directional associations
-to Backbone models using the `has` and `belongsTo` association names
+to Backbone models using the `hasOne`, `hasMany`, and `belongsTo` association names
 familiar from ActiveRecord in Rails. While heavily influenced by
 Backbone-Relational, Backbone-Associative differs in two key ways:
 
@@ -10,13 +10,13 @@ rather than assigning both in a single model class.
 //Backbone-Associative
 House = Backbone.AssociativeModel.extend({
     associations: function() {
-        this.hasMany('occupants').viaReverseKey('livesIn');
+        this.hasMany('occupants').viaReverseKey('livesIn').modelClass('Person');
     }
 });
 
 Person = Backbone.AssociativeModel.extend({
     associations: function() {
-        this.hasOne('house').includeInJSON(false);
+        this.hasOne('house');
     }
 });
 
@@ -37,7 +37,7 @@ House = Backbone.RelationalModel.extend({
 });
 ```
 2. Associations are declared in a chained, sentence-like API, rather
-   than by passing in an options hash.  TODO: example comparing syntax
+   than by passing in an options hash.  TODO: example showing and comparing syntax; in the meantime, please see the specs.
 
 # Usage
 To use Backbone-Associative,
@@ -54,7 +54,7 @@ To use Backbone-Associative,
 
     Comment = Backbone.AssociativeModel.extend({
         associations: function() {
-            this.belongsToOne('article');
+            this.belongsTo('article');
         }
     });
 ```
@@ -68,6 +68,8 @@ it is destroyed as well.
 * `collection` - pass a custom collection model class to be used for a `hasMany` association.
 * `viaKey` means "pluck the key named X and assign it to an attribute on the model in which this association is being declared (the attribute's name is the association's name)"
 * `viaReverseKey` means "where the model in which this association is being declared is identified by one of the space-separated keys that follow"
+* `as` is an option passed after `viaReverseKey`. It means "use the associationName" to look up the class of the model in this association, but assign that model to the attribute name I'm passing in to `as`. Use this option when you have more than one `hasOne` association using the same `reverseKey`.
+* `modelClassName` is an option passed after `viaReverseKey`. BBA will use the string passed in to this option to look up the class of the model in this association, and will then assign that model to the associationName.  Use this option when you have more than one `hasMany` association using the same `reverseKey`.
 
 ## Configuration
 Backbone.AssociativeModel has two methods for configuration:

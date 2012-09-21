@@ -109,6 +109,10 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 return _.extend(returnObj, {
                     as: function(associationName) {
                         associationObj.asAssociationName = associationName;
+                    },
+
+                    modelClassName: function(modelClassName) {
+                        associationObj.modelClassName = modelClassName;
                     }
                 });
             }
@@ -120,8 +124,10 @@ Backbone.AssociativeModel = Backbone.Model.extend({
     setReciprocalAssociationIfPresent: function(associatedModel, associatedKey, options) {
         //3 valid cases in which we set reciprocal association:
         //1: viaReverseKey === associatedKey and there is only one association w/ viaReverseKey === associatedKey
-        //2: viaReverseKey === associatedKey && associationName === model's class name & there is only one like this (associationName here means the name of the attribute whose value is an associated model or collection)
-        //3: there is no association with viaReverseKey === associatedKey but there is one and only one association with association name === model's class name
+        //2: viaReverseKey === associatedKey && associationName === model's class name & there is only one like this
+        //   (associationName here means the name of the attribute whose value is an associated model or collection)
+        //3: there is no association with viaReverseKey === associatedKey but there is one and only one association
+        //   with association name === model's class name
         if (_.isUndefined(associatedModel._associations)) return;
 
         var viaReverseKeyIsSameAsAssociatedKey = function(assocObj) {
@@ -159,9 +165,10 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     },
 
                     associationName = assocObj.name,
-                    upperCaseAssociationName = associationName.replace(associationName.charAt(0), associationName.charAt().toUpperCase());
+                    upperCaseAssociationName = associationName.replace(associationName.charAt(0), associationName.charAt().toUpperCase()),
+                    modelClassName = assocObj.modelClassName || upperCaseAssociationName;
 
-                return this.constructor === classifyAssociationName(upperCaseAssociationName);
+                return this.constructor === classifyAssociationName(modelClassName);
             },
 
             setReciprocalAssociation = function(assocObj) {
