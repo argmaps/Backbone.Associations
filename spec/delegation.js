@@ -249,3 +249,41 @@ describe("#delegateAttribute", function() {
         this.subject.off('change:delegatedAttrName', this.testPreviousCallBack, this.subject); //necessary otherwise later tests fail
     });
 });
+
+describe("when an attribute is delegated that also has a default specified", function() {
+    beforeEach(function() {
+        DelegateModel = Backbone.AssociativeModel.extend({
+            associations: function() {
+                this.hasOne('modelWithDelegatedAttr').viaReverseKey('delegateModel');
+            }
+        });
+
+        ModelWithDelegatedAttr = Backbone.AssociativeModel.extend({
+            defaults: function() {
+                return {
+                    delegatedAttrName: 23
+                };
+            },
+
+            associations: function() {  this.hasOne('delegateModel');  },
+
+            delegateAttributes: {
+                'delegatedAttrName': 'delegateModel'
+            }
+        });
+
+        this.delegate = new DelegateModel();
+        this.delegating = new ModelWithDelegatedAttr({
+            delegateModel: this.delegate
+        });
+    });
+
+    it("sets the delegated attribute to the default value on the delegate model", function() {
+        expect(this.delegate.get('delegatedAttrName')).toEqual(23);
+    });
+
+    it("removes the delegated attribute and its default value from the delegating model's attributes", function() {
+        expect(this.delegating.attributes.delegatedAttrName).not.toBeDefined();
+    });
+});
+

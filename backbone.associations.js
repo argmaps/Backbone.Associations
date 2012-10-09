@@ -20,6 +20,16 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         // set up delegation for delegated attributes
         this._delegateAttributes(this.delegateAttributes);
 
+        // remove any delegated attributes from the delegating
+        // model's private attributes hash, and assign them to
+        // the delegate (any we find will have arrived here as
+        // default values)
+        delegatedAttrNames.each(function(delegatedAttrKey) {
+            var v = this.attributes[delegatedAttrKey];
+            delete this.attributes[delegatedAttrKey];
+            if (v) this.set(delegatedAttrKey, v);
+        },  this  );
+
         //set all delegated attrs now that their associations have been set
         var valid = this.set(attrsToDelegate);
 
