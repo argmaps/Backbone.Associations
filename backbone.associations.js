@@ -119,10 +119,12 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 return _.extend(returnObj, {
                     as: function(associationName) {
                         associationObj.asAssociationName = associationName;
+                        return returnObj;
                     },
 
                     modelClassName: function(modelClassName) {
                         associationObj.modelClassName = modelClassName;
+                        return returnObj;
                     }
                 });
             }
