@@ -191,7 +191,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     if (attr.include(this) === false) attr.add(this, options);
                 } else {
                     associatedModel.set(attrName, this, options);
-                    this.on('destroy', function() {  if (associatedModel.get(attrName) === this) associatedModel.unset(attrName);  },  this);
+                    this.on('destroy', function(model, collection, options) {  if (associatedModel.get(attrName) === this) associatedModel.unset(attrName, options);  },  this);
                 }
             };
 
@@ -286,7 +286,11 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 var handler = function(hostModel, associatedModel, options) {
                     if (!associatedModel || associatedModel instanceof Backbone.AssociativeModel === false) return;
                     hostModel.setReciprocalAssociationIfPresent(associatedModel, associatedKey, options);
-                    associatedModel.on('destroy', function(model, collection, options) {  hostModel.destroy(options);  });
+                    var destroyDependentModelWhenIndependentModelDestroyed = function(model, collection, options) {
+                        model.off('destroy', destroyDependentModelWhenIndependentModelDestroyed);
+                        hostModel.destroy(options);
+                    };
+                    associatedModel.on('destroy', destroyDependentModelWhenIndependentModelDestroyed);
                 };
                 self.on('change:'+associatedKey, handler);
             };

@@ -203,10 +203,10 @@ describe("#delegateAttribute", function() {
         expect(this.subject.get("delegatedAttrName")).toEqual(22);
     });
 
-    it("calls #validate on the model with delegated attr prior to setting on the delegate model", function() {
+    it("when {validate: true}, is passed, it calls #validate on the model with delegated attr prior to setting on the delegate model", function() {
         this.subject.validate = function() {};
         spyOn(this.subject, 'validate');
-        this.subject.set({"delegatedAttrName": 22});
+        this.subject.set({"delegatedAttrName": 22}, {validate: true});
         expect(this.subject.validate).wasCalled();
     });
 
@@ -214,18 +214,18 @@ describe("#delegateAttribute", function() {
         var callback = jasmine.createSpy();
 
         this.subject.on('change:delegatedAttrName', callback, this.subject);
-        this.subject.set('delegatedAttrName', 'changed');
+        this.subject.set('delegatedAttrName', 'changed', {myOption: true});
         this.subject.off('change:delegatedAttrName', callback, this.subject); //necessary otherwise later tests fail
-        expect(callback).toHaveBeenCalledWith(this.delegateModel, 'changed', {changes: { delegatedAttrName: true }});
+        expect(callback).toHaveBeenCalledWith(this.delegateModel, 'changed', {myOption: true});
     });
 
     it("when a delegated attr is set on the model to which it is delegated, a change:attrName event fires on the delegating model", function() {
         var callback = jasmine.createSpy();
 
         this.subject.on('change:delegatedAttrName', callback, this.subject);
-        this.delegateModel.set('delegatedAttrName', 'changed');
+        this.delegateModel.set('delegatedAttrName', 'changed', {myOption: true});
         this.subject.off('change:delegatedAttrName', callback, this.subject); //necessary otherwise later tests fail
-        expect(callback).toHaveBeenCalledWith(this.delegateModel, 'changed', {changes: { delegatedAttrName: true }});
+        expect(callback).toHaveBeenCalledWith(this.delegateModel, 'changed', {myOption: true});
     });
 
     it("when a change:attrName is triggered on the delegate model, a change:attrName event fires on the delegating model", function() {
