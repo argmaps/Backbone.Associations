@@ -31,7 +31,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         },  this  );
 
         //set all delegated attrs now that their associations have been set
-        var valid = this.set(attrsToDelegate);
+        var valid = this.set(attrsToDelegate, {validate: true});
 
         //trigger special change events to update attributes obtained through associations when those associations are set during initial instantiation
         _(this.attributes).each(function(v,k) {  this.trigger('change:'+k, this, this.get(k), options);  },  this);
