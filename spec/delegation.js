@@ -27,8 +27,18 @@ describe("`delegateAttributes` property, for delegating attributes on instantiat
 
     it("delegated attributes are available in change:associationName callbacks", function() {
         ModelWithDelegatedAttr.prototype.initialize = function() {
+            var count = 0;
             this.on('change:delegateModel', function(model, options) {
-                expect(this.get('delegatedAttrName')).toEqual('Yes');
+                if (count === 0) {
+                    // the delegateModel is set first because it's a non-delegated attr
+                    expect(this.get('delegatedAttrName')).not.toBeDefined();
+                } else if (count === 1) {
+                    // ...then the delegated attr is set, which results in it being set
+                    // on the delegate model (& not set on the delegating model)
+                    expect(this.attributes['delegatedAttrName']).not.toBeDefined();
+                    expect(this.get('delegatedAttrName')).toEqual('Yes');
+                }
+                count ++;
             },  this  );
         };
 
@@ -286,4 +296,3 @@ describe("when an attribute is delegated that also has a default specified", fun
         expect(this.delegating.attributes.delegatedAttrName).not.toBeDefined();
     });
 });
-
