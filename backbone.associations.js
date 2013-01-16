@@ -1,8 +1,7 @@
 Backbone.AssociativeModel = Backbone.Model.extend({
     constructor: function(attributes, options) {
-        var delegatedAttrNames = _(_(this.delegateAttributes).chain().keys().map(function(k) {
-            return k.split(/\s+/);
-        }).flatten().value());
+        this.adaptDelegatedAttributesIntoMap();
+        var delegatedAttrNames = _(_(this.delegatedAttrsMap).keys());
 
         // sort attributes, regular attributes before attributes to be delegated, so that
         // the latter can be delegated to the former, if need be
@@ -42,7 +41,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             this.prepForAssociations();
             this.associations(); //executes the `associations` function in user's model class
         }
-        this._delegateAttributes(this.delegateAttributes);
+        this.setupDelegatedAttributes(); //over-writes this#get and this#set
 
         return Backbone.Model.prototype.set.apply(this, arguments);
     },
@@ -331,68 +330,47 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         };
     },
 
-    delegateAttribute: function(attrName) {
-        return this.delegateAttributesInternal(attrName);
-    },
-
-    _delegateAttributes: function(delegatedAttrMap) {
-    /*
-        looks like:
-        {
-            'attr1 attr2 attr3': 'delegateModel'
-        }
-     */
-        _(delegatedAttrMap).each(function(delegateModel, delegatedAttributes) {
-            this.delegateAttributesInternal(delegatedAttributes).toAttribute(delegateModel);
+    adaptDelegatedAttributesIntoMap: function() {
+        // adapt delegatedAttributes into delegatedAttrName -> delegateModelName map
+        this.delegatedAttrsMap = {};
+        _(this.delegateAttributes).each(function(delegateModelAttrName, delegatedAttrNames) {
+            var attributeNameList = delegatedAttrNames.split(/\s+/);
+            _.each(attributeNameList, function(attributeName) {
+                this.delegatedAttrsMap[attributeName] = delegateModelAttrName;
+            },  this  );
         },  this  );
     },
 
-    delegateAttributesInternal: function(attributeNames) {
-        var self = this,
-            delegatedAttrsMap = this.delegatedAttrsMap || this.setupDelegatedAttributes();
-
-        return {
-            toAttribute: function(delegateModelAttributeName) {
-                var delegateModel = self.get(delegateModelAttributeName),
-                    delegatedAttrChanged;
-
-                var attributeNameList = attributeNames.split(/\s+/);
-                _.each(attributeNameList, function(attributeName) {
-                    delegatedAttrsMap[attributeName] = delegateModelAttributeName;
-
-                    delegatedAttrChanged = function(delegateModel, changedAttrVal, options) {
-                        this.trigger('change:'+attributeName, delegateModel, changedAttrVal, options);
-                    };
-
-                    var bindDelegatedAttrChanged = function(delegateModel) {
-                            delegateModel.on('change:'+attributeName, delegatedAttrChanged, self);
-                        },
-                        unbindDelegatedAttrChanged = function(delegateModel) {
-                            delegateModel.off('change:'+attributeName, bindDelegatedAttrChanged);
-                        };
-
-                    if (delegateModel) {
-                        bindDelegatedAttrChanged(delegateModel);
-                    } else {
-                        self.on('change:'+delegateModelAttributeName, function(delegatingModel, delegateModel, options) {
-                            if (delegateModel) bindDelegatedAttrChanged(delegateModel);
-                        });
-                    }
-
-                    self.on('change:'+delegateModelAttributeName, function(delegatingModel, delegateModel, options) {
-                        var formerDelegateModel = delegatingModel.previous(attributeName);
-                        if (!delegateModel && formerDelegateModel) unbindDelegatedAttrChanged(formerDelegateModel);
-                    });
-                });
-            }
-        };
-    },
-
     setupDelegatedAttributes: function() {
-        this.delegatedAttrsMap = {};
         this.get = this.getWithDelegates;
         this.set = this.setWithDelegates;
-        return this.delegatedAttrsMap;
+
+        // bind to change events once the delegate models are set
+        var self = this;
+        _(this.delegatedAttrsMap).each(function(delegateModelAttrName, delegatedAttrName) {
+            var delegatedAttrChanged = function(delegateModel, changedAttrVal, options) {
+                    this.trigger('change:'+delegatedAttrName, delegateModel, changedAttrVal, options);
+                },
+
+                bindDelegatedAttrChanged = function(delegateModel) {
+                    delegateModel.on('change:'+delegatedAttrName, delegatedAttrChanged, self);
+                },
+
+                unbindDelegatedAttrChanged = function(delegateModel) {
+                    delegateModel.off('change:'+delegatedAttrName, bindDelegatedAttrChanged);
+                };
+
+                self.on('change:'+delegateModelAttrName, function(delegatingModel, delegateModel, options) {
+                    if (delegateModel) bindDelegatedAttrChanged(delegateModel);
+                    // TODO trigger a change:attrName if delegateModel has this attribute to bring
+                    // delegatingModel in sync with delegateModel
+                });
+
+                self.on('change:'+delegateModelAttrName, function(delegatingModel, delegateModel, options) {
+                    var formerDelegateModel = delegatingModel.previous(delegateModelAttrName);
+                    if (!delegateModel && formerDelegateModel) unbindDelegatedAttrChanged(formerDelegateModel);
+                });
+        });
     },
 
     getWithDelegates: function(attrName) {

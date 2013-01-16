@@ -137,8 +137,8 @@ describe("#delegateAttributesInternal", function() {
 
         ModelWithDelegatedAttr = Backbone.AssociativeModel.extend({
             associations: function() {  this.hasOne('delegateModel');  },
-            initialize: function() {
-                this.delegateAttributesInternal("delegatedAttrName1 delegatedAttrName2").toAttribute("delegateModel");
+            delegateAttributes: {
+                'delegatedAttrName1 delegatedAttrName2': 'delegateModel'
             }
         });
 
@@ -194,8 +194,9 @@ describe("#delegateAttribute", function() {
 
         ModelWithDelegatedAttr = Backbone.AssociativeModel.extend({
             associations: function() {  this.hasOne('delegateModel');  },
-            initialize: function() {
-                this.delegateAttribute('delegatedAttrName').toAttribute('delegateModel');
+
+            delegateAttributes: {
+                'delegatedAttrName': 'delegateModel'
             }
         });
 
