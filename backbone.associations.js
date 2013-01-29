@@ -180,7 +180,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     if (attr.include(this) === false) attr.add(this, options);
                 } else {
                     associatedModel.set(attrName, this, options);
-                    this.on('destroy', function(model, collection, options) {  if (associatedModel.get(attrName) === this) associatedModel.unset(attrName, options);  },  this);
+                    this.on('destroy', function(model, collection, options) {  if (associatedModel.get(attrName) === this) associatedModel.unset(attrName, options);  });
                 }
             };
 
@@ -203,7 +203,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             setupHasMany = function(associatedKey, collection) {
                 var prepHasManyCollection = function(associatedKey, collection) {
                     collection || (collection = new Backbone.AssociativeModel._defaultCollection());
-                    collection.on('destroy', collection.remove, collection)
+                    collection.on('destroy', collection.remove)
                         .on('add', function(model, collection, options) {  self.trigger('add:'+associatedKey, model, collection, options);  })
                         .on('add', function(model, collection, options) {  self.setReciprocalAssociationIfPresent(model, associatedKey, options);  })
                         .on('remove', function(model, collection, options) {  self.trigger('remove:'+associatedKey, model, collection, options);});
@@ -229,7 +229,8 @@ Backbone.AssociativeModel = Backbone.Model.extend({
 
                     fromAttribute = self.get(attrName);
                     if (fromAttribute instanceof Backbone.Collection) {
-                        fromAttribute.on('add', aggregateCollection.add, aggregateCollection).on('remove', aggregateCollection.remove, aggregateCollection);
+                        aggregateCollection.listenTo(fromAttribute, 'add', aggregateCollection.add)
+                                            .listenTo(fromAttribute, 'remove', aggregateCollection.remove);
                     } else {
                         //if the fromAttribute is a model, add it to aggregateCollection when it gets set on host model, and remove it when it gets unset
                         handler = function(hostModel, fromAttributeVal) {
@@ -240,6 +241,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                                aggregateCollection.remove(fromAttributeVal);
                             }
                         };
+
                         self.on('change:'+attrName, handler);
                     }
                 });
