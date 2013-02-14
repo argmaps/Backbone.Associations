@@ -136,7 +136,6 @@ Backbone.AssociativeModel = Backbone.Model.extend({
             },
 
             rootNameSpace = Backbone.AssociativeModel._namespace,
-            subNameSpaces = _(_(rootNameSpace).chain().keys().select(function(k) { return !_.isFunction(rootNameSpace[k]); }).value()),
 
             associationNameIsNameOfHostModelsClass = function(assocObj) {
                 var classifyAssociationName = function(modelName) {
@@ -145,23 +144,6 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                         if (modelName.charAt(modelName.length - 1) === 's') {
                             var modelNameWithoutTrailingS = modelName.substring(0, modelName.length - 1);
                             if (rootNameSpace[modelNameWithoutTrailingS]) return rootNameSpace[modelNameWithoutTrailingS];
-                        }
-
-                        var modelSubNameSpaceForThisModel = subNameSpaces.detect(function(ns) {
-                            var original = _.isFunction(rootNameSpace[ns][modelName]) && new rootNameSpace[ns][modelName]() instanceof Backbone.AssociativeModel,
-                                withoutTrailingS;
-
-                            if (modelNameWithoutTrailingS) {
-                                withoutTrailingS = _.isFunction(rootNameSpace[ns][modelNameWithoutTrailingS])
-                                                        && new rootNameSpace[ns][modelNameWithoutTrailingS]() instanceof Backbone.AssociativeModel;
-                            }
-
-                            return original || withoutTrailingS;
-                        });
-
-                        if (rootNameSpace[modelSubNameSpaceForThisModel]) {
-                            if (!modelNameWithoutTrailingS) return rootNameSpace[modelSubNameSpaceForThisModel][modelName];
-                            else return rootNameSpace[modelSubNameSpaceForThisModel][modelNameWithoutTrailingS];
                         }
                     },
 
@@ -177,7 +159,7 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                     attr = associatedModel.get(attrName);
                 if (attr instanceof Backbone.Collection) {
                     //screen out additions that could be duplicate due to change events fired on initial instantiation
-                    if (attr.include(this) === false) attr.add(this, options);
+                    if (!attr.get(this)) attr.add(this, options);
                 } else {
                     associatedModel.set(attrName, this, options);
                     this.on('destroy', function(model, collection, options) {  if (associatedModel.get(attrName) === this) associatedModel.unset(attrName, options);  });
