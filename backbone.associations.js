@@ -402,19 +402,19 @@ Backbone.AssociativeModel = Backbone.Model.extend({
         // Run validation on host model before setting, so that host
         // model can run its own validations against delegated
         // attributes.
-        if (!this._validate(attrHash, options)) return false;
+        if (options.validate && !this._validate(attrHash, options)) return false;
 
-        var delegatedAttrsMap = this.delegatedAttrsMap,
+        var delegatedAttrKeys = _(this.delegatedAttrsMap).keys(),
             delegatedAttrNames = _(attrHash).chain()
                                             .keys()
                                             .select(function(key) {
-                                                return _(delegatedAttrsMap).chain().keys().include(key).value();
+                                                return delegatedAttrKeys.indexOf(key) !== -1;
                                             })
                                             .value();
 
         if (delegatedAttrNames.length > 0) {
             _(attrHash).each(function(v,k) {
-                var delegateModelName = delegatedAttrsMap[k];
+                var delegateModelName = this.delegatedAttrsMap[k];
                 if (delegateModelName) {
                     var delegateModel = this.get(delegateModelName);
                     delegateModel.set(k, v, options);
