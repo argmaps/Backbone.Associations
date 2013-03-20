@@ -211,8 +211,8 @@ Backbone.AssociativeModel = Backbone.Model.extend({
 
                     fromAttribute = self.get(attrName);
                     if (fromAttribute instanceof Backbone.Collection) {
-                        aggregateCollection.listenTo(fromAttribute, 'add', aggregateCollection.add)
-                                            .listenTo(fromAttribute, 'remove', aggregateCollection.remove);
+                        aggregateCollection.listenTo(fromAttribute, 'add', function(model, collection, options) {  aggregateCollection.add(model, options);  })
+                                            .listenTo(fromAttribute, 'remove', function(model, collection, options) {  aggregateCollection.remove(model, options);  });
                     } else {
                         //if the fromAttribute is a model, add it to aggregateCollection when it gets set on host model, and remove it when it gets unset
                         handler = function(hostModel, fromAttributeVal) {
