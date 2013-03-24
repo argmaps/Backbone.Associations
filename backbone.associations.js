@@ -337,23 +337,20 @@ Backbone.AssociativeModel = Backbone.Model.extend({
                 },
 
                 bindDelegatedAttrChanged = function(delegateModel) {
-                    delegateModel.on('change:'+delegatedAttrName, delegatedAttrChanged, self);
+                    self.listenTo(delegateModel, 'change:'+delegatedAttrName, delegatedAttrChanged)
+                        .listenTo(delegateModel, 'destroy', stopListeningToDelegateModel);
                 },
 
-                unbindDelegatedAttrChanged = function(delegateModel) {
-                    delegateModel.off('change:'+delegatedAttrName, bindDelegatedAttrChanged);
+                stopListeningToDelegateModel = function(delegateModel, collection, options) {
+                    this.stopListening(delegateModel);
+                },
+
+                startListeningToDelegateModel = function(delegatingModel, delegateModel, options) {
+                    if (delegateModel) bindDelegatedAttrChanged(delegateModel);
+                    else this.once('change:'+delegateModelAttrName, startListeningToDelegateModel);
                 };
 
-                self.on('change:'+delegateModelAttrName, function(delegatingModel, delegateModel, options) {
-                    if (delegateModel) bindDelegatedAttrChanged(delegateModel);
-                    // TODO trigger a change:attrName if delegateModel has this attribute to bring
-                    // delegatingModel in sync with delegateModel
-                });
-
-                self.on('change:'+delegateModelAttrName, function(delegatingModel, delegateModel, options) {
-                    var formerDelegateModel = delegatingModel.previous(delegateModelAttrName);
-                    if (!delegateModel && formerDelegateModel) unbindDelegatedAttrChanged(formerDelegateModel);
-                });
+            self.once('change:'+delegateModelAttrName, startListeningToDelegateModel, self);
         });
     },
 
