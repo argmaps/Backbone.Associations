@@ -1,10 +1,9 @@
 Backbone-Associative gives simple mono- or bi-directional associations
 to Backbone models using the `hasOne`, `hasMany`, and `belongsTo` association names
-familiar from ActiveRecord in Rails. While heavily influenced by
-Backbone-Relational, Backbone-Associative differs in two key ways:
+familiar from ActiveRecord in Rails. It also lets models delegate attributes to associated models, while respecting that model's defaults and validation rules, and letting the delegating model listen to `change:delegatedAttribute` events. While heavily influenced by Backbone-Relational, Backbone-Associative differs in two key ways:
 
-1. Associations (and reverse associations) are assigned in their own model classes,
-rather than assigning both in a single model class.
+1. Associations (and reverse associations) are assigned in their own model classes, rather than assigning both in a single model class.
+2. Associations are declared in a chained, sentence-like API, rather than by passing in an options hash.
 
 ```javascript
 //Backbone-Associative
@@ -36,16 +35,33 @@ House = Backbone.RelationalModel.extend({
     ]
 });
 ```
-2. Associations are declared in a chained, sentence-like API, rather
-   than by passing in an options hash.  TODO: example showing and comparing syntax; in the meantime, please see the specs.
 
 # Usage
 To use Backbone-Associative,
 
-1. Extend your model classes from Backbone.AssociativeModel.
+1. Extend your model classes from `Backbone.AssociativeModel`.
 2. Add an `associations` function as an instance property on your Backbone.AssociativeModel classes. Note: associations that depend on other associations should be specified *after* the associations on which they depend.
 
-```javascript
+    <pre>
+    <code>
+    Article = Backbone.AssociativeModel.extend({
+        <b>associations: function() {
+            this.hasMany('comments');
+        }</b>
+    });
+
+    Comment = Backbone.AssociativeModel.extend({
+        <b>associations: function() {
+            this.belongsTo('article');
+        }</b>
+    });
+    </code>
+    </pre>
+    
+3. Delegate attributes by adding a `delegateAttributes` instance property:
+
+    <pre>
+    <code>
     Article = Backbone.AssociativeModel.extend({
         associations: function() {
             this.hasMany('comments');
@@ -55,9 +71,15 @@ To use Backbone-Associative,
     Comment = Backbone.AssociativeModel.extend({
         associations: function() {
             this.belongsTo('article');
-        }
+        },
+        <b>delegateAttributes: {
+            'subject': 'article'
+        }</b>
     });
-```
+    </code>
+    </pre>
+
+
 # Associations
 * `hasOne` and `hasMany` associations indicate that another class has a
 reference to the class to which you assign the `has` association.
@@ -72,13 +94,8 @@ it is destroyed as well.
 * `modelClassName` is an option passed after `viaReverseKey`. BBA will use the string passed in to this option to look up the class of the model in this association, and will then assign that model to the associationName.  Use this option when you have more than one `hasMany` association using the same `reverseKey`.
 
 ## Configuration
-Backbone.AssociativeModel has two methods for configuration:
-1.  `Backbone.AssociativeModel.namespace`, which accepts a string or
-    object to be used as the root namespace when looking up reverse
-associations.
-2.  `Backbone.AssociativeModel.defaultCollection`, which accepts a
-    string or descendant of Backbone.Collection to be used as the
-default collection for new HasMany collections.
+1. `Backbone.AssociativeModel.namespace` accepts a string or object to be used as the root namespace when looking up reverse associations.
+2. `Backbone.AssociativeModel.defaultCollection` accepts a string or descendant of `Backbone.Collection` to be used as the default collection for new `hasMany` collections.
 
 # License
 MIT.  Use and enjoy!
